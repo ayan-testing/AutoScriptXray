@@ -1,200 +1,70 @@
 #!/bin/bash
 
-cd
-rm -rf setup.sh
-clear
-red='\e[1;31m'
-green='\e[0;32m'
-yell='\e[1;33m'
-tyblue='\e[1;36m'
-BRed='\e[1;31m'
-BGreen='\e[1;32m'
-BYellow='\e[1;33m'
-BBlue='\e[1;34m'
-NC='\e[0m'
-purple() { echo -e "\\033[35;1m${*}\\033[0m"; }
-tyblue() { echo -e "\\033[36;1m${*}\\033[0m"; }
-yellow() { echo -e "\\033[33;1m${*}\\033[0m"; }
-green() { echo -e "\\033[32;1m${*}\\033[0m"; }
-red() { echo -e "\\033[31;1m${*}\\033[0m"; }
-cd /root
-#System version number
-if [ "${EUID}" -ne 0 ]; then
+# Ensure script is run as root
+if [ "$(id -u)" -ne 0 ]; then
     echo "You need to run this script as root"
-    sleep 5
     exit 1
 fi
+
+# Check if running on OpenVZ (unsupported)
 if [ "$(systemd-detect-virt)" == "openvz" ]; then
-    echo "OpenVZ is not supported"
-    clear
-    echo "For VPS with KVM and VMWare virtualization ONLY"
-    sleep 5
+    echo "OpenVZ is not supported. Use KVM or VMWare virtualization."
     exit 1
 fi
 
-localip=$(hostname -I | cut -d\  -f1)
-hst=( `hostname` )
-dart=$(cat /etc/hosts | grep -w `hostname` | awk '{print $2}')
-if [[ "$hst" != "$dart" ]]; then
-    echo "$localip $(hostname)" >> /etc/hosts
-fi
-# buat folder
-mkdir -p /etc/xray
-mkdir -p /etc/v2ray
-touch /etc/xray/domain
-touch /etc/v2ray/domain
-touch /etc/xray/scdomain
-touch /etc/v2ray/scdomain
+# Prepare system
+localip=$(hostname -I | cut -d ' ' -f1)
+hostname=$(hostname)
+domain_from_etc=$(grep -w "$hostname" /etc/hosts | awk '{print $2}')
+[ "$hostname" != "$domain_from_etc" ] && echo "$localip $hostname" >> /etc/hosts
 
-
-echo -e "[ ${BBlue}NOTES${NC} ] Before we go.. "
-sleep 0.5
-echo -e "[ ${BBlue}NOTES${NC} ] I need check your headers first.."
-sleep 0.5
-echo -e "[ ${BGreen}INFO${NC} ] Checking headers"
-sleep 0.5
-totet=`uname -r`
-REQUIRED_PKG="linux-headers-$totet"
-PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
-echo Checking for $REQUIRED_PKG: $PKG_OK
-if [ "" = "$PKG_OK" ]; then
-    sleep 0.5
-    echo -e "[ ${BRed}WARNING${NC} ] Try to install ...."
-    echo "No $REQUIRED_PKG. Setting up $REQUIRED_PKG."
-    apt-get --yes install $REQUIRED_PKG
-    sleep 0.5
+# Check if kernel headers are installed
+kernel_version=$(uname -r)
+required_pkg="linux-headers-$kernel_version"
+if ! dpkg-query -W --showformat='${Status}\n' "$required_pkg" | grep -q "install ok installed"; then
+    echo "Installing required kernel headers..."
+    apt-get --yes install "$required_pkg"
     echo ""
-    sleep 0.5
-    echo -e "[ ${BBlue}NOTES${NC} ] If error you need.. to do this"
-    sleep 0.5
-    echo ""
-    sleep 0.5
-    echo -e "[ ${BBlue}NOTES${NC} ] apt update && apt upgrade -y && reboot"
-    sleep 0.5
-    echo ""
-    sleep 0.5
-    echo -e "[ ${BBlue}NOTES${NC} ] After this"
-    sleep 0.5
-    echo -e "[ ${BBlue}NOTES${NC} ] Then run this script again"
-    echo -e "[ ${BBlue}NOTES${NC} ] enter now"
-    read
-else
-    echo -e "[ ${BGreen}INFO${NC} ] Oke installed"
-fi
-
-ttet=`uname -r`
-ReqPKG="linux-headers-$ttet"
-if ! dpkg -s $ReqPKG  >/dev/null 2>&1; then
-    rm /root/setup.sh >/dev/null 2>&1
-    exit
-else
-    clear
-fi
-
-ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
-sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1
-sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null 2>&1
-
-echo -e "[ ${BGreen}INFO${NC} ] Preparing the install file"
-apt install git curl -y >/dev/null 2>&1
-apt install python -y >/dev/null 2>&1
-echo -e "[ ${BGreen}INFO${NC} ] Aight good ... installation file is ready"
-sleep 0.5
-echo -ne "[ ${BGreen}INFO${NC} ] Check permission : "
-
-echo -e "$BGreen Permission Accepted!$NC"
-sleep 2
-
-mkdir -p /var/lib/ >/dev/null 2>&1
-echo "IP=" >> /var/lib/ipvps.conf
-
-echo ""
-clear
-echo -e "$BBlue                     SETUP DOMAIN VPS     $NC"
-echo -e "$BYellow----------------------------------------------------------$NC"
-echo -e "$BGreen 1. Use Domain Random / Gunakan Domain Random $NC"
-echo -e "$BGreen 2. Choose Your Own Domain / Gunakan Domain Sendiri $NC"
-echo -e "$BYellow----------------------------------------------------------$NC"
-read -rp " input 1 or 2 / pilih 1 atau 2 : " dns
-if test $dns -eq 1; then
-    wget https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/cf && chmod +x cf && ./cf
-    elif test $dns -eq 2; then
-    read -rp "Enter Your Domain / masukan domain : " dom
-    echo "IP=$dom" > /var/lib/ipvps.conf
-    echo "$dom" > /root/scdomain
-    echo "$dom" > /etc/xray/scdomain
-    echo "$dom" > /etc/xray/domain
-    echo "$dom" > /etc/v2ray/domain
-    echo "$dom" > /root/domain
-else
-    echo "Not Found Argument"
+    echo "Please run: apt update && apt upgrade -y && reboot"
+    echo "Then re-run this script."
+    read -p "Press Enter to exit..."
     exit 1
 fi
-echo -e "${BGreen}Done!${NC}"
-sleep 2
+
+# Disable IPv6
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+# Install required packages
+apt install -y git curl python >/dev/null 2>&1
+
+# Ask for domain
 clear
+echo "---------------------------"
+echo "      VPS DOMAIN SETUP     "
+echo "---------------------------"
+read -rp "Enter Your Domain: " user_domain
 
-#install ssh ovpn
-echo -e "\e[33m-----------------------------------\033[0m"
-echo -e "$BGreen      Install SSH Websocket           $NC"
-echo -e "\e[33m-----------------------------------\033[0m"
-sleep 0.5
-clear
-wget https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/ssh-vpn.sh && chmod +x ssh-vpn.sh && ./ssh-vpn.sh
+echo "$user_domain" > /etc/AutoScriptXray/domain
 
-wget https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/sshws/insshws.sh && chmod +x insshws.sh && ./insshws.sh
-clear
-cat> /root/.profile << END
-# ~/.profile: executed by Bourne-compatible login shells.
+# Install SSH WebSocket
+echo "Installing SSH WebSocket..."
+wget -q https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/ssh-vpn.sh && chmod +x ssh-vpn.sh && ./ssh-vpn.sh
+wget -q https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/sshws/insshws.sh && chmod +x insshws.sh && ./insshws.sh
 
-if [ "$BASH" ]; then
-  if [ -f ~/.bashrc ]; then
-    . ~/.bashrc
-  fi
-fi
+# Log installation info
+echo "Service & Port:" | tee -a /root/log-install.txt
+echo "OpenSSH                  : 22" | tee -a /root/log-install.txt
+echo "SSH WebSocket            : 80" | tee -a /root/log-install.txt
+echo "SSH SSL WebSocket        : 443" | tee -a /root/log-install.txt
+echo "Stunnel4                 : 222, 777" | tee -a /root/log-install.txt
+echo "Dropbear                 : 109, 143" | tee -a /root/log-install.txt
+echo "Badvpn                   : 7100-7900" | tee -a /root/log-install.txt
+echo "Nginx                    : 81" | tee -a /root/log-install.txt
 
-mesg n || true
-clear
-menu
-END
-chmod 644 /root/.profile 
-
-if [ -f "/root/log-install.txt" ]; then
-    rm /root/log-install.txt > /dev/null 2>&1
-fi
-if [ -f "/etc/afak.conf" ]; then
-    rm /etc/afak.conf > /dev/null 2>&1
-fi
-if [ ! -f "/etc/log-create-ssh.log" ]; then
-    echo "Log SSH Account " > /etc/log-create-ssh.log
-fi
-history -c
-serverV=$( curl -sS https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/versi  )
-echo $serverV > /opt/.ver
-aureb=$(cat /home/re_otm)
-b=11
-if [ $aureb -gt $b ]
-then
-    gg="PM"
-else
-    gg="AM"
-fi
-curl -sS ipv4.icanhazip.com > /etc/myipvps
+# Cleanup and reboot
+rm -f /root/setup.sh /root/insshws.sh
 echo ""
-echo ""
-echo "   >>> Service & Port"  | tee -a log-install.txt
-echo "   - OpenSSH                  : 22"  | tee -a log-install.txt
-echo "   - SSH Websocket            : 80" | tee -a log-install.txt
-echo "   - SSH SSL Websocket        : 443" | tee -a log-install.txt
-echo "   - Stunnel4                 : 222, 777" | tee -a log-install.txt
-echo "   - Dropbear                 : 109, 143" | tee -a log-install.txt
-echo "   - Badvpn                   : 7100-7900" | tee -a log-install.txt
-echo "   - Nginx                    : 81" | tee -a log-install.txt
-echo ""
-rm /root/setup.sh >/dev/null 2>&1
-rm /root/insshws.sh >/dev/null 2>&1
-echo -e ""
-echo " Auto reboot in 10 Seconds "
+echo "Rebooting in 10 seconds..."
 sleep 10
-rm -rf setup.sh
 reboot

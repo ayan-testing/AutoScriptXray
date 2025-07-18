@@ -1,113 +1,64 @@
 #!/bin/bash
-# pewarna hidup
-BRed='\e[1;31m'
-BGreen='\e[1;32m'
-BYellow='\e[1;33m'
-BBlue='\e[1;34m'
-BPurple='\e[1;35m'
-NC='\e[0m'
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
-clear
-if [ ! -e /usr/local/bin/reboot_otomatis ]; then
-echo '#!/bin/bash' > /usr/local/bin/reboot_otomatis 
-echo 'tanggal=$(date +"%m-%d-%Y")' >> /usr/local/bin/reboot_otomatis 
-echo 'waktu=$(date +"%T")' >> /usr/local/bin/reboot_otomatis 
-echo 'echo "Server successfully rebooted on the date of $tanggal hit $waktu." >> /root/log-reboot.txt' >> /usr/local/bin/reboot_otomatis 
-echo '/sbin/shutdown -r now' >> /usr/local/bin/reboot_otomatis 
-chmod +x /usr/local/bin/reboot_otomatis
+
+REBOOT_SCRIPT="/usr/local/bin/reboot_otomatis"
+CRON_FILE="/etc/cron.d/reboot_otomatis"
+LOG_FILE="/root/log-reboot.txt"
+
+# Create reboot script if it doesn't exist
+if [[ ! -f $REBOOT_SCRIPT ]]; then
+cat <<EOF > "$REBOOT_SCRIPT"
+#!/bin/bash
+echo "Server successfully rebooted on \$(date '+%m-%d-%Y %T')" >> "$LOG_FILE"
+/sbin/shutdown -r now
+EOF
+chmod +x "$REBOOT_SCRIPT"
 fi
+
+# Display menu
 clear
-echo -e "\e[1;33m -------------------------------------------------\e[0m"
-echo -e "\e[1;34m                 AUTO-REBOOT MENU                 \e[0m"
-echo -e "\e[1;33m -------------------------------------------------\e[0m"
-echo -e ""
-echo -e "\e[1;35m 1 \e[0m Set Auto-Reboot Setiap 1 Jam"
-echo -e "\e[1;35m 2 \e[0m Set Auto-Reboot Setiap 6 Jam"
-echo -e "\e[1;35m 3 \e[0m Set Auto-Reboot Setiap 12 Jam"
-echo -e "\e[1;35m 4 \e[0m Set Auto-Reboot Setiap 1 Hari"
-echo -e "\e[1;35m 5 \e[0m Set Auto-Reboot Setiap 1 Minggu"
-echo -e "\e[1;35m 6 \e[0m Set Auto-Reboot Setiap 1 Bulan"
-echo -e "\e[1;35m 7 \e[0m Matikan Auto-Reboot"
-echo -e "\e[1;35m 8 \e[0m View reboot log"
-echo -e "\e[1;35m 9 \e[0m Remove reboot log"
-echo -e ""
-echo -e "\e[1;35m 0 \e[0m Back To Menu"
-echo -e ""
-echo -e "\e[1;34m Press x or [ Ctrl+C ] To-Exit \e[0m"
-echo -e ""
-echo -e "\e[1;33m -------------------------------------------------\e[0m"
-echo -e ""
-read -p " Select menu : " x
-if test $x -eq 1; then
-echo "10 * * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
-echo "Auto-Reboot has been set every an hour."
-elif test $x -eq 2; then
-echo "10 */6 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
-echo "Auto-Reboot has been successfully set every 6 hours."
-elif test $x -eq 3; then
-echo "10 */12 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
-echo "Auto-Reboot has been successfully set every 12 hours."
-elif test $x -eq 4; then
-echo "10 0 * * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
-echo "Auto-Reboot has been successfully set once a day."
-elif test $x -eq 5; then
-echo "10 0 */7 * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
-echo "Auto-Reboot has been successfully set once a week."
-elif test $x -eq 6; then
-echo "10 0 1 * * root /usr/local/bin/reboot_otomatis" > /etc/cron.d/reboot_otomatis
-echo "Auto-Reboot has been successfully set once a month."
-elif test $x -eq 7; then
-rm -f /etc/cron.d/reboot_otomatis
-echo "Auto-Reboot successfully TURNED OFF."
-elif test $x -eq 8; then
-if [ ! -e /root/log-reboot.txt ]; then
-	clear
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;34m                  AUTO-REBOOT LOG                 \e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e ""
-    echo " No reboot activity found \e[0m"
-    echo -e ""
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo ""
-    read -n 1 -s -r -p "Press any key to back on menu"
-    auto-reboot
-	else
-	clear
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;34m                   AUTO-REBOOT LOG         	   \e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e ""    
-	echo ' LOG REBOOT \e[0m'
-	cat /root/log-reboot.txt
-    echo -e ""
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo ""
-    read -n 1 -s -r -p "Press any key to back on menu"
-    auto-reboot    
-fi
-elif test $x -eq 9; then
-clear
-echo -e "\e[1;33m -------------------------------------------------\e[0m"
-echo -e "\e[1;34m                  AUTO-REBOOT LOG                 \e[0m"
-echo -e "\e[1;33m -------------------------------------------------\e[0m"
-echo -e ""  
-echo "" > /root/log-reboot.txt
-echo " Auto Reboot Log successfully deleted! \e[0m"
-echo -e ""
-echo -e "\e[1;33m -------------------------------------------------\e[0m"
-echo ""
-read -n 1 -s -r -p "Press any key to back on menu"
-auto-reboot 
-elif test $x -eq 0; then
-clear
-m-system
-else
-clear
-echo ""
-echo "Options Not Found In Menu"
-echo ""
-read -n 1 -s -r -p "Press any key to back on menu"
-auto-reboot 
-fi
+echo -e "==================== AUTO-REBOOT MENU ===================="
+echo -e " 1) Every 1 Hour"
+echo -e " 2) Every 6 Hours"
+echo -e " 3) Every 12 Hours"
+echo -e " 4) Every 1 Day"
+echo -e " 5) Every 1 Week"
+echo -e " 6) Every 1 Month"
+echo -e " 7) Disable Auto-Reboot"
+echo -e " 8) View Reboot Log"
+echo -e " 9) Clear Reboot Log"
+echo -e " 0) Back to Menu"
+echo -e "=========================================================="
+read -rp "Select option: " choice
+
+set_cron() {
+    echo "$1 root $REBOOT_SCRIPT" > "$CRON_FILE"
+    echo "Auto-Reboot set: $2"
+}
+
+case $choice in
+  1) set_cron "10 * * * *" "Every 1 Hour" ;;
+  2) set_cron "10 */6 * * *" "Every 6 Hours" ;;
+  3) set_cron "10 */12 * * *" "Every 12 Hours" ;;
+  4) set_cron "10 0 * * *" "Every 1 Day" ;;
+  5) set_cron "10 0 */7 * *" "Every 1 Week" ;;
+  6) set_cron "10 0 1 * *" "Every 1 Month" ;;
+  7) rm -f "$CRON_FILE"; echo "Auto-Reboot has been disabled." ;;
+  8)
+    clear
+    echo "================== AUTO-REBOOT LOG =================="
+    if [[ -f $LOG_FILE && -s $LOG_FILE ]]; then
+        cat "$LOG_FILE"
+    else
+        echo "No reboot activity found."
+    fi
+    echo "====================================================="
+    read -n 1 -s -r -p "Press any key to return..."
+    ;;
+  9)
+    > "$LOG_FILE"
+    echo "Reboot log has been cleared."
+    read -n 1 -s -r -p "Press any key to return..."
+    ;;
+  0) m-system ;;
+  *) echo "Invalid selection."; sleep 1 ;;
+esac

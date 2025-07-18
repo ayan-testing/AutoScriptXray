@@ -1,263 +1,77 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
+MYIP=$(wget -qO- ipv4.icanhazip.com)
 clear
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e ""
-echo -e " [\e[36m•1\e[0m] Restart All Services"
-echo -e " [\e[36m•2\e[0m] Restart OpenSSH"
-echo -e " [\e[36m•3\e[0m] Restart Dropbear"
-echo -e " [\e[36m•4\e[0m] Restart Stunnel4"
-echo -e " [\e[36m•5\e[0m] Restart OpenVPN"
-echo -e " [\e[36m•6\e[0m] Restart Squid"
-echo -e " [\e[36m•7\e[0m] Restart Nginx"
-echo -e " [\e[36m•8\e[0m] Restart Badvpn"
-echo -e " [\e[36m•9\e[0m] Restart XRAY"
-echo -e " [\e[36m10\e[0m] Restart WEBSOCKET"
-echo -e " [\e[36m11\e[0m] Restart Trojan Go"
-echo -e ""
-echo -e " [\e[31m•0\e[0m] \e[31mBACK TO MENU\033[0m"
-echo -e   ""
-echo -e   "Press x or [ Ctrl+C ] • To-Exit"
-echo -e   ""
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e ""
-read -p " Select menu : " Restart
-echo -e ""
-sleep 1
+echo "============== RESTART MENU =============="
+echo "1. Restart All Services"
+echo "2. Restart OpenSSH"
+echo "3. Restart Dropbear"
+echo "4. Restart Stunnel4"
+echo "5. Restart OpenVPN"
+echo "6. Restart Squid"
+echo "7. Restart Nginx"
+echo "8. Restart Badvpn"
+echo "9. Restart WebSocket"
+echo ""
+echo "0. Back to Menu"
+echo "x. Exit"
+echo "=========================================="
+read -p "Select menu: " choice
 clear
-case $Restart in
-                1)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                /etc/init.d/ssh restart
-                /etc/init.d/dropbear restart
-                /etc/init.d/stunnel4 restart
-                /etc/init.d/openvpn restart
-                /etc/init.d/fail2ban restart
-                /etc/init.d/cron restart
-                /etc/init.d/nginx restart
-                /etc/init.d/squid restart
-                echo -e "[ \033[32mok\033[0m ] Restarting xray Service (via systemctl) "
-                sleep 0.5
-                systemctl restart xray
-                systemctl restart xray.service
-                echo -e "[ \033[32mok\033[0m ] Restarting badvpn Service (via systemctl) "
-                sleep 0.5
-                screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500
-                screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500
-                screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
-                sleep 0.5
-                echo -e "[ \033[32mok\033[0m ] Restarting websocket Service (via systemctl) "
-                sleep 0.5
-                systemctl restart sshws.service
-                systemctl restart ws-dropbear.service
-                systemctl restart ws-stunnel.service
-                sleep 0.5
-                echo -e "[ \033[32mok\033[0m ] Restarting Trojan Go Service (via systemctl) "
-                sleep 0.5
-                systemctl restart trojan-go.service 
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] ALL Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                2)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                /etc/init.d/ssh restart
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] SSH Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                3)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                /etc/init.d/dropbear restart
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] Dropbear Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                4)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                /etc/init.d/stunnel4 restart
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] Stunnel4 Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                5)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                /etc/init.d/openvpn restart
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] Openvpn Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                6)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                /etc/init.d/squid restart
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] Squid Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                7)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                /etc/init.d/nginx restart
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] Nginx Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                8)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                echo -e "[ \033[32mok\033[0m ] Restarting badvpn Service (via systemctl) "
-                screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] Badvpn Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                9)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                echo -e "[ \033[32mok\033[0m ] Restarting xray Service (via systemctl) "
-                systemctl restart xray
-                systemctl restart xray.service
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] XRAY Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                10)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                echo -e "[ \033[32mok\033[0m ] Restarting websocket Service (via systemctl) "
-                sleep 0.5
-                systemctl restart sshws.service
-                systemctl restart ws-dropbear.service
-                systemctl restart ws-stunnel.service
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] WEBSOCKET Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;
-                11)
-                clear
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e "\E[0;100;33m         • RESTART MENU •          \E[0m"
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo -e ""
-                echo -e "[ \033[32mInfo\033[0m ] Restart Begin"
-                sleep 1
-                echo -e "[ \033[32mok\033[0m ] Restarting Trojan Go Service (via systemctl) "
-                sleep 0.5
-                systemctl restart trojan-go.service
-                sleep 0.5
-                echo -e "[ \033[32mInfo\033[0m ] Trojan Go Service Restarted"
-                echo ""
-                echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-                echo ""
-                read -n 1 -s -r -p "Press any key to back on system menu"
-                restart
-                ;;                                                                         
-                0)
-                m-system
-                exit
-                ;;
-                x)
-                clear
-                exit
-                ;;
-                *) echo -e "" ; echo "Anda salah tekan" ; sleep 1 ; restart ;;               
-        esac
+
+restart_message() {
+  echo ""
+  echo "Restarting $1..."
+  sleep 1
+}
+
+pause_return() {
+  echo ""
+  read -n 1 -s -r -p "Press any key to return to the menu"
+  restart
+}
+
+case $choice in
+  1)
+    restart_message "All Services"
+    /etc/init.d/ssh restart
+    /etc/init.d/dropbear restart
+    /etc/init.d/stunnel4 restart
+    /etc/init.d/openvpn restart
+    /etc/init.d/fail2ban restart
+    /etc/init.d/cron restart
+    /etc/init.d/nginx restart
+    /etc/init.d/squid restart
+    screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500
+    screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500
+    screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
+    systemctl restart sshws.service
+    systemctl restart ws-dropbear.service
+    systemctl restart ws-stunnel.service
+    systemctl restart trojan-go.service
+    echo "All services restarted."
+    pause_return
+    ;;
+  2) restart_message "OpenSSH"; /etc/init.d/ssh restart; pause_return ;;
+  3) restart_message "Dropbear"; /etc/init.d/dropbear restart; pause_return ;;
+  4) restart_message "Stunnel4"; /etc/init.d/stunnel4 restart; pause_return ;;
+  5) restart_message "OpenVPN"; /etc/init.d/openvpn restart; pause_return ;;
+  6) restart_message "Squid"; /etc/init.d/squid restart; pause_return ;;
+  7) restart_message "Nginx"; /etc/init.d/nginx restart; pause_return ;;
+  8) 
+    restart_message "Badvpn"
+    screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
+    echo "Badvpn restarted."
+    pause_return
+    ;;
+  9) 
+    restart_message "WebSocket Services"
+    systemctl restart sshws.service
+    systemctl restart ws-dropbear.service
+    systemctl restart ws-stunnel.service
+    echo "WebSocket services restarted."
+    pause_return
+    ;;
+  0) m-system; exit ;;
+  x) exit ;;
+  *) echo "Invalid selection"; sleep 1; restart ;;
+esac

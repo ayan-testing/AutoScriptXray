@@ -1,46 +1,33 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
-clear
-               hariini=`date +%d-%m-%Y`
-               echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-               echo -e "\E[44;1;39m              ⇱ AUTO DELETE ⇲               \E[0m"
-               echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"  
-               echo "Thank you for removing the EXPIRED USERS"
-               echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"  
-               cat /etc/shadow | cut -d: -f1,8 | sed /:$/d > /tmp/expirelist.txt
-               totalaccounts=`cat /tmp/expirelist.txt | wc -l`
-               for((i=1; i<=$totalaccounts; i++ ))
-               do
-               tuserval=`head -n $i /tmp/expirelist.txt | tail -n 1`
-               username=`echo $tuserval | cut -f1 -d:`
-               userexp=`echo $tuserval | cut -f2 -d:`
-               userexpireinseconds=$(( $userexp * 86400 ))
-               tglexp=`date -d @$userexpireinseconds`             
-               tgl=`echo $tglexp |awk -F" " '{print $3}'`
-               while [ ${#tgl} -lt 2 ]
-               do
-               tgl="0"$tgl
-               done
-               while [ ${#username} -lt 15 ]
-               do
-               username=$username" " 
-               done
-               bulantahun=`echo $tglexp |awk -F" " '{print $2,$6}'`
-               echo "echo "Expired- User : $username Expire at : $tgl $bulantahun"" >> /usr/local/bin/alluser
-               todaystime=`date +%s`
-               if [ $userexpireinseconds -ge $todaystime ] ;
-               then
-		    	:
-               else
-               echo "echo "Expired- Username : $username are expired at: $tgl $bulantahun and removed : $hariini "" >> /usr/local/bin/deleteduser
-	           echo "Username $username that are expired at $tgl $bulantahun removed from the VPS $hariini"
-               userdel $username
-               fi
-               done
-               echo " "
-               echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"  
-               
-               read -n 1 -s -r -p "Press any key to back on menu"
-               m-sshovpn
-        
+
+today=$(date +%s)
+today_human=$(date +%d-%m-%Y)
+
+echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo -e "\E[44;1;39m              ⇱ AUTO DELETE ⇲               \E[0m"
+echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo "Checking and removing expired users..."
+echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+
+# Parse /etc/shadow to get usernames and expiry
+cut -d: -f1,8 /etc/shadow | grep -v ':\s*$' > /tmp/expirelist.txt
+
+while IFS=: read -r username expiry_days; do
+    [ -z "$expiry_days" ] && continue
+    expiry_secs=$((expiry_days * 86400))
+    expiry_date=$(date -d "@$expiry_secs" "+%d %b %Y")
+
+    # Log all users with expiry
+    echo "echo Expired- User: $username Expire at: $expiry_date" >> /usr/local/bin/alluser
+
+    # Check expiry
+    if [ "$expiry_secs" -lt "$today" ]; then
+        echo "echo Expired- Username: $username expired on $expiry_date and removed on $today_human" >> /usr/local/bin/deleteduser
+        echo "User $username expired on $expiry_date and removed on $today_human"
+        userdel "$username"
+    fi
+done < /tmp/expirelist.txt
+
+echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+read -n 1 -s -r -p "Press any key to return to menu..."
+m-sshovpn

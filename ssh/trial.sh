@@ -1,93 +1,67 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
-clear
-cekray=`cat /root/log-install.txt | grep -ow "XRAY" | sort | uniq`
-if [ "$cekray" = "XRAY" ]; then
-domen=`cat /etc/xray/domain`
-else
-domen=`cat /etc/v2ray/domain`
-fi
-portsshws=`cat ~/log-install.txt | grep -w "SSH Websocket" | cut -d: -f2 | awk '{print $1}'`
-wsssl=`cat /root/log-install.txt | grep -w "SSH SSL Websocket" | cut -d: -f2 | awk '{print $1}'`
 
-clear
-IP=$(curl -sS ifconfig.me);
-ossl=`cat /root/log-install.txt | grep -w "OpenVPN" | cut -f2 -d: | awk '{print $6}'`
-opensh=`cat /root/log-install.txt | grep -w "OpenSSH" | cut -f2 -d: | awk '{print $1}'`
-db=`cat /root/log-install.txt | grep -w "Dropbear" | cut -f2 -d: | awk '{print $1,$2}'`
-ssl="$(cat ~/log-install.txt | grep -w "Stunnel4" | cut -d: -f2)"
-sqd="$(cat ~/log-install.txt | grep -w "Squid" | cut -d: -f2)"
-ovpn="$(netstat -nlpt | grep -i openvpn | grep -i 0.0.0.0 | awk '{print $4}' | cut -d: -f2)"
-ovpn2="$(netstat -nlpu | grep -i openvpn | grep -i 0.0.0.0 | awk '{print $4}' | cut -d: -f2)"
+# File containing port info
+PORT_INFO="/etc/AutoScriptXray/ports.json"
 
-OhpSSH=`cat /root/log-install.txt | grep -w "OHP SSH" | cut -d: -f2 | awk '{print $1}'`
-OhpDB=`cat /root/log-install.txt | grep -w "OHP DBear" | cut -d: -f2 | awk '{print $1}'`
-OhpOVPN=`cat /root/log-install.txt | grep -w "OHP OpenVPN" | cut -d: -f2 | awk '{print $1}'`
+# Get public IP and domain
+MYIP=$(wget -qO- ipv4.icanhazip.com)
+DOMAIN=$(cat /etc/AutoScriptXray/domain)
+IP=$(curl -sS ifconfig.me)
 
-Login=trial`</dev/urandom tr -dc X-Z0-9 | head -c4`
-hari="1"
-Pass=1
-echo Ping Host
-echo Create Akun: $Login
-sleep 0.5
-echo Setting Password: $Pass
-sleep 0.5
-clear
-useradd -e `date -d "$masaaktif days" +"%Y-%m-%d"` -s /bin/false -M $Login
-exp="$(chage -l $Login | grep "Account expires" | awk -F": " '{print $2}')"
-echo -e "$Pass\n$Pass\n"|passwd $Login &> /dev/null
-PID=`ps -ef |grep -v grep | grep sshws |awk '{print $2}'`
+# Function to fetch ports from JSON
+get_port() {
+    jq -r ".$1" "$PORT_INFO"
+}
 
-if [[ ! -z "${PID}" ]]; then
+# Read ports from JSON
+portsshws=$(get_port "sshws")
+wsssl=$(get_port "wsssl")
+opensh=$(get_port "openssh")
+db=$(get_port "dropbear")
+ssl=$(get_port "stunnel")
+squid=$(get_port "squid")
+ohpssh=$(get_port "ohpssh")
+ohpdb=$(get_port "ohpdb")
+ohpovpn=$(get_port "ohpovpn")
+
+# Get OpenVPN ports dynamically
+ovpn_tcp=$(netstat -nlpt | grep -i openvpn | awk -F: '/0.0.0.0/ {print $NF}')
+ovpn_udp=$(netstat -nlpu | grep -i openvpn | awk -F: '/0.0.0.0/ {print $NF}')
+
+# Create trial account
+LOGIN="trial$(tr -dc X-Z0-9 </dev/urandom | head -c4)"
+PASS="1"
+DAYS_ACTIVE=1
+
+# Add user
+useradd -e $(date -d "$DAYS_ACTIVE days" +"%Y-%m-%d") -s /bin/false -M "$LOGIN"
+echo -e "$PASS\n$PASS" | passwd "$LOGIN" &>/dev/null
+EXP_DATE=$(chage -l "$LOGIN" | grep "Account expires" | cut -d: -f2)
+
+# Display account info
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 echo -e "\E[0;41;36m            TRIAL SSH              \E[0m"
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "Username   : $Login"
-echo -e "Password   : $Pass"
-echo -e "Expired On : $exp"
+echo -e "Username   : $LOGIN"
+echo -e "Password   : $PASS"
+echo -e "Expired On : $EXP_DATE"
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 echo -e "IP         : $IP"
-echo -e "Host       : $domen"
+echo -e "Host       : $DOMAIN"
 echo -e "OpenSSH    : $opensh"
 echo -e "Dropbear   : $db"
 echo -e "SSH WS     : $portsshws"
 echo -e "SSH SSL WS : $wsssl"
-echo -e "SSL/TLS    :$ssl"
+echo -e "SSL/TLS    : $ssl"
 echo -e "UDPGW      : 7100-7900"
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "Payload WSS"
-echo -e "GET wss://isi_bug_disini HTTP/1.1[crlf]Host: ${domen}[crlf]Upgrade: websocket[crlf][crlf]"
+echo -e "Payload WSS:"
+echo -e "GET wss://bug-host HTTP/1.1[crlf]Host: $DOMAIN[crlf]Upgrade: websocket[crlf][crlf]"
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "Payload WS"
-echo -e "GET / HTTP/1.1[crlf]Host: $domen[crlf]Upgrade: websocket[crlf][crlf]"
+echo -e "Payload WS:"
+echo -e "GET / HTTP/1.1[crlf]Host: $DOMAIN[crlf]Upgrade: websocket[crlf][crlf]"
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 
-else
-
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "\E[0;41;36m            TRIAL SSH              \E[0m"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "Username   : $Login"
-echo -e "Password   : $Pass"
-echo -e "Expired On : $exp"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "IP         : $IP"
-echo -e "Host       : $domen"
-echo -e "OpenSSH    : $opensh"
-echo -e "Dropbear   : $db"
-echo -e "SSH WS     : $portsshws"
-echo -e "SSH SSL WS : $wsssl"
-echo -e "SSL/TLS    :$ssl"
-echo -e "UDPGW      : 7100-7900"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "Payload WSS"
-echo -e "GET wss://isi_bug_disini HTTP/1.1[crlf]Host: ${domen}[crlf]Upgrade: websocket[crlf][crlf]"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "Payload WS"
-echo -e "GET / HTTP/1.1[crlf]Host: $domen[crlf]Upgrade: websocket[crlf][crlf]"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-fi
-echo ""
-read -n 1 -s -r -p "Press any key to back on menu"
+# Wait for key press
+read -n 1 -s -r -p "Press any key to return to menu"
 m-sshovpn

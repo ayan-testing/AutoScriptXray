@@ -2,16 +2,6 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 
-#=================================================
-#	System Required: CentOS 6/7,Debian 8/9,Ubuntu 16+
-#	Description: BBR+BBRmagic version+BBRplus+Lotserver
-#	Version: 1.4.0
-#	Author: 千影,cx9208
-#	Blog: https://www.939.me/
-#   推荐使用5.5以上内核直接开启的bbr速度最佳
-#       translation into english by ayan-testing
-#=================================================
-
 sh_ver="1.4.0"
 github="raw.githubusercontent.com/chiakge/Linux-NetSpeed/master"
 

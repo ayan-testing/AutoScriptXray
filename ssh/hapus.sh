@@ -1,20 +1,19 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
+
 clear
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 echo -e "\E[44;1;39m             ⇱ DELETE USER ⇲               \E[0m"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"  
+echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 echo ""
-read -p "Username SSH to Delete : " Pengguna
 
-if getent passwd $Pengguna > /dev/null 2>&1; then
-        userdel $Pengguna > /dev/null 2>&1
-        echo -e "User $Pengguna was removed."
+read -p "Username SSH to Delete: " user
+
+if id "$user" &>/dev/null; then
+    userdel "$user" &>/dev/null
+    echo -e "User '$user' has been deleted."
 else
-        echo -e "Failure: User $Pengguna Not Exist."
+    echo -e "Error: User '$user' does not exist."
 fi
 
-read -n 1 -s -r -p "Press any key to back on menu"
-
+read -n 1 -s -r -p "Press any key to return to the menu..."
 m-sshovpn

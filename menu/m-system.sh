@@ -1,36 +1,34 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
+
 clear
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "\E[0;100;33m          • SYSTEM MENU •          \E[0m"
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e ""
-echo -e " [\e[36m•1\e[0m] Panel Domain"
-echo -e " [\e[36m•2\e[0m] Speedtest VPS"
-echo -e " [\e[36m•3\e[0m] Set Auto Reboot"
-echo -e " [\e[36m•4\e[0m] Restart All Service"
-echo -e " [\e[36m•5\e[0m] Cek Bandwith"
-echo -e " [\e[36m•6\e[0m] Install TCP BBR"
-echo -e " [\e[36m•7\e[0m] DNS CHANGER"
-echo -e ""
-echo -e " [\e[31m•0\e[0m] \e[31mBACK TO MENU\033[0m"
-echo -e   ""
-echo -e   "Press x or [ Ctrl+C ] • To-Exit"
-echo -e   ""
-echo -e "\e[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e ""
-read -p " Select menu : " opt
-echo -e ""
+echo -e "\033[33m=========== SYSTEM MENU ===========\033[0m"
+echo ""
+echo " [1] Domain Panel"
+echo " [2] VPS Speedtest"
+echo " [3] Set Auto Reboot"
+echo " [4] Restart All Services"
+echo " [5] Check Bandwidth"
+echo " [6] Install TCP BBR"
+echo " [7] DNS Changer"
+echo ""
+echo " [0] Back to Main Menu"
+echo " [x] Exit"
+echo ""
+echo -e "\033[33m===================================\033[0m"
+echo ""
+
+read -p "Select option: " opt
+echo ""
+
 case $opt in
-1) clear ; m-domain ; exit ;;
-2) clear ; speedtest ; exit ;;
-3) clear ; auto-reboot ; exit ;;
-4) clear ; restart ; exit ;;
-5) clear ; bw ; exit ;;
-6) clear ; m-tcp ; exit ;;
-7) clear ; m-dns ; exit ;;
-0) clear ; menu ; exit ;;
-x) exit ;;
-*) echo -e "" ; echo "Anda salah tekan" ; sleep 1 ; m-system ;;
+  1) clear; m-domain; exit ;;
+  2) clear; speedtest; exit ;;
+  3) clear; auto-reboot; exit ;;
+  4) clear; restart; exit ;;
+  5) clear; bw; exit ;;
+  6) clear; m-tcp; exit ;;
+  7) clear; m-dns; exit ;;
+  0) clear; menu; exit ;;
+  x) exit ;;
+  *) echo "Invalid option"; sleep 1; m-system ;;
 esac

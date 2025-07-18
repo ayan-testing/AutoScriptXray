@@ -1,24 +1,24 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
-clear
-cekray=`cat /root/log-install.txt | grep -ow "XRAY" | sort | uniq`
+
+# Clear the screen
 clear
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 echo ""
-read -rp "Add Subdomain/Tambah Subdomain: " -e host
+
+# Prompt for subdomain
+read -rp "Enter subdomain to add: " host
 echo ""
-if [ -z $host ]; then
-echo "????"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-read -n 1 -s -r -p "Press any key to back on menu"
-m-domain
+
+if [[ -z "$host" ]]; then
+    echo "No subdomain entered."
 else
-echo "IP=$host" > /var/lib/ipvps.conf
-echo "$host" > /root/domain
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo "Dont forget to renew cert"
-echo ""
-read -n 1 -s -r -p "Press any key to back on menu"
-m-domain
+    echo "$host" > /etc/AutoScriptXray/domain
+    echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo "Domain has been set to: $host"
+    echo "Remember to renew the certificate if required."
 fi
+
+echo ""
+echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+read -n 1 -s -r -p "Press any key to return to the menu..."
+m-domain

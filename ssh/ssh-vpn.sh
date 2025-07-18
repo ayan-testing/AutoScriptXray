@@ -1,281 +1,118 @@
 #!/bin/bash
-# cari apa
-apt dist-upgrade -y
-apt install netfilter-persistent -y
-apt-get remove --purge ufw firewalld -y
-apt install -y screen curl jq bzip2 gzip vnstat coreutils rsyslog iftop zip unzip git apt-transport-https build-essential -y
 
-# initializing var
+# === Basic Setup ===
 export DEBIAN_FRONTEND=noninteractive
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-MYIP2="s/xxxxxxxxx/$MYIP/g";
-NET=$(ip -o $ANU -4 route show to default | awk '{print $5}');
-source /etc/os-release
-ver=$VERSION_ID
+domain=$(cat /etc/AutoScriptXray/domain)
+MYIP=$(wget -qO- ipv4.icanhazip.com)
 
-#detail nama perusahaan
-country=ID
-state=Indonesia
-locality=Jakarta
-organization=none
-organizationalunit=none
-commonname=none
-email=none
+# Update & Cleanup
+apt update -y && apt dist-upgrade -y && apt upgrade -y
+apt-get purge -y ufw firewalld exim4 samba* apache2* bind9* sendmail* unscd || true
+apt autoremove -y && apt autoclean -y
 
-# simple password minimal
-curl -sS https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/password | openssl aes-256-cbc -d -a -pass pass:scvps07gg -pbkdf2 > /etc/pam.d/common-password
-chmod +x /etc/pam.d/common-password
+# Install Essentials
+apt install -y \
+  netfilter-persistent screen curl jq bzip2 gzip vnstat coreutils rsyslog \
+  iftop zip unzip git apt-transport-https build-essential figlet \
+  python make net-tools nano sed gnupg gnupg1 bc dirmngr \
+  lsof libz-dev gcc g++ \
+  zlib1g-dev libssl-dev libssl1.0-dev dos2unix fail2ban \
+  shc wget stunnel4 nginx socat xz-utils
 
-# go to root
-cd
+gem install lolcat
 
-# Edit file /etc/systemd/system/rc-local.service
-cat > /etc/systemd/system/rc-local.service <<-END
+# Timezone & Locale
+ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
+
+# Disable IPv6
+echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
+echo "echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6" >> /etc/rc.local
+
+# === rc.local Setup ===
+cat > /etc/systemd/system/rc-local.service <<EOF
 [Unit]
 Description=/etc/rc.local
 ConditionPathExists=/etc/rc.local
 [Service]
 Type=forking
 ExecStart=/etc/rc.local start
-TimeoutSec=0
-StandardOutput=tty
 RemainAfterExit=yes
-SysVStartPriority=99
 [Install]
 WantedBy=multi-user.target
-END
+EOF
 
-# nano /etc/rc.local
-cat > /etc/rc.local <<-END
+cat > /etc/rc.local <<EOF
 #!/bin/sh -e
-# rc.local
-# By default this script does nothing.
 exit 0
-END
+EOF
 
-# Ubah izin akses
 chmod +x /etc/rc.local
+systemctl enable rc-local && systemctl start rc-local
 
-# enable rc local
-systemctl enable rc-local
-systemctl start rc-local.service
+# === SSH Configuration ===
+sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+for port in 22 200 500 666 51443 40000 58080; do
+    sed -i "/Port 22/a Port $port" /etc/ssh/sshd_config
+done
+/etc/init.d/ssh restart
 
-# disable ipv6
-echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
-sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
+# === Dropbear Configuration ===
+apt install -y dropbear
+sed -i 's/NO_START=1/NO_START=0/' /etc/default/dropbear
+sed -i 's/DROPBEAR_PORT=22/DROPBEAR_PORT=143/' /etc/default/dropbear
+sed -i 's|DROPBEAR_EXTRA_ARGS=.*|DROPBEAR_EXTRA_ARGS="-p 50000 -p 109 -p 110 -p 69"|' /etc/default/dropbear
+echo -e "/bin/false\n/usr/sbin/nologin" >> /etc/shells
+/etc/init.d/dropbear restart
 
-#update
-apt update -y
-apt upgrade -y
-apt dist-upgrade -y
-apt-get remove --purge ufw firewalld -y
-apt-get remove --purge exim4 -y
-
-#install jq
-apt -y install jq
-
-#install shc
-apt -y install shc
-
-# install wget and curl
-apt -y install wget curl
-
-#figlet
-apt-get install figlet -y
-apt-get install ruby -y
-apt install python -y
-apt install make -y
-apt install cmake -y
-apt install coreutils -y
-apt install rsyslog -y
-apt install net-tools -y
-apt install zip -y
-apt install unzip -y
-apt install nano -y
-apt install sed -y
-apt install gnupg -y
-apt install gnupg1 -y
-apt install bc -y
-apt install jq -y
-apt install apt-transport-https -y
-apt install build-essential -y
-apt install dirmngr -y
-apt install libxml-parser-perl -y
-apt install neofetch -y
-apt install git -y
-apt install lsof -y
-apt install libsqlite3-dev -y
-apt install libz-dev -y
-apt install gcc -y
-apt install g++ -y
-apt install libreadline-dev -y
-apt install zlib1g-dev -y
-apt install libssl-dev -y
-apt install libssl1.0-dev -y
-apt install dos2unix -y
-gem install lolcat
-
-# set time GMT +7
-ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
-
-# set locale
-sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
-
-
-install_ssl(){
-    if [ -f "/usr/bin/apt-get" ];then
-            isDebian=`cat /etc/issue|grep Debian`
-            if [ "$isDebian" != "" ];then
-                    apt-get install -y nginx certbot
-                    apt install -y nginx certbot
-                    sleep 3s
-            else
-                    apt-get install -y nginx certbot
-                    apt install -y nginx certbot
-                    sleep 3s
-            fi
-    else
-        yum install -y nginx certbot
-        sleep 3s
-    fi
-
-    systemctl stop nginx.service
-
-    if [ -f "/usr/bin/apt-get" ];then
-            isDebian=`cat /etc/issue|grep Debian`
-            if [ "$isDebian" != "" ];then
-                    echo "A" | certbot certonly --renew-by-default --register-unsafely-without-email --standalone -d $domain
-                    sleep 3s
-            else
-                    echo "A" | certbot certonly --renew-by-default --register-unsafely-without-email --standalone -d $domain
-                    sleep 3s
-            fi
-    else
-        echo "Y" | certbot certonly --renew-by-default --register-unsafely-without-email --standalone -d $domain
-        sleep 3s
-    fi
-}
-
-# Set domain variable (ensure /etc/xray/domain or /root/domain exists or prompt user to set domain)
-if [ -f /etc/xray/domain ]; then
-    domain=$(cat /etc/xray/domain)
-elif [ -f /root/domain ]; then
-    domain=$(cat /root/domain)
-else
-    echo "Enter your domain (for SSL cert):"
-    read domain
-    echo "$domain" > /root/domain
-fi
-
-# Install nginx and dependencies
-apt -y install nginx socat curl wget xz-utils apt-transport-https gnupg gnupg2 gnupg1 lsb-release zip
-
-# Remove default nginx configs
-rm -f /etc/nginx/sites-enabled/default
-rm -f /etc/nginx/sites-available/default
-rm -f /etc/nginx/conf.d/default.conf
-
-# Download custom nginx config (adjust as needed)
-wget -O /etc/nginx/nginx.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/nginx.conf"
-rm -f /etc/nginx/conf.d/vps.conf
-wget -O /etc/nginx/conf.d/vps.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/vps.conf"
-
-# Add xray.conf for / proxy to 127.0.0.1:700
-wget -O /etc/nginx/conf.d/xray.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/xray.conf"
-
-# Create web root
+# === Nginx Setup ===
+rm -f /etc/nginx/{sites-available/default,sites-enabled/default,conf.d/default.conf}
 mkdir -p /home/vps/public_html
-wget -O /home/vps/public_html/index.html "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/index"
-wget -O /home/vps/public_html/.htaccess "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/.htaccess"
-mkdir -p /home/vps/public_html/ss-ws
-mkdir -p /home/vps/public_html/clash-ws
-
-# Prepare nginx systemd override
 mkdir -p /etc/systemd/system/nginx.service.d
-printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
-systemctl daemon-reload
-service nginx restart
 
-# --- SSL Certificate with acme.sh ---
-systemctl stop nginx
+# Download Nginx configs and web files
+files=(
+  "nginx.conf:/etc/nginx/nginx.conf"
+  "vps.conf:/etc/nginx/conf.d/vps.conf"
+  "xray.conf:/etc/nginx/conf.d/xray.conf"
+  "index:/home/vps/public_html/index.html"
+  ".htaccess:/home/vps/public_html/.htaccess"
+)
+for f in "${files[@]}"; do
+    name="${f%%:*}"
+    path="${f##*:}"
+    wget -qO "$path" "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/$name"
+done
+
+cat > /etc/systemd/system/nginx.service.d/override.conf <<EOF
+[Service]
+ExecStartPost=/bin/sleep 0.1
+EOF
+
+systemctl daemon-reload
+systemctl restart nginx
+
+# === SSL Certificate Setup with acme.sh ===
 mkdir -p /root/.acme.sh
-curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+curl -s https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
 chmod +x /root/.acme.sh/acme.sh
 /root/.acme.sh/acme.sh --upgrade --auto-upgrade
 /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-/root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
-~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/nginx/ssl.crt --keypath /etc/nginx/ssl.key --ecc
+/root/.acme.sh/acme.sh --issue -d "$domain" --standalone -k ec-256
+/root/.acme.sh/acme.sh --installcert -d "$domain" \
+  --fullchainpath /etc/AutoScriptXray/cert.crt \
+  --keypath /etc/AutoScriptXray/cert.key --ecc
 
-# # Configure nginx to use SSL cert (add to vps.conf or your server block as needed)
-# if ! grep -q 'ssl_certificate /etc/nginx/ssl.crt;' /etc/nginx/conf.d/vps.conf; then
-#     sed -i "/server_name/a \\tssl_certificate /etc/nginx/ssl.crt;\n\ssl_certificate_key /etc/nginx/ssl.key;\n\tssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;\n\tssl_ciphers EECDH+CHACHA20:EECDH+ECDSA+AES128:EECDH+aRSA+AES128:RSA+AES128:EECDH+ECDSA+AES256:EECDH+aRSA+AES256:RSA+AES256:EECDH+ECDSA+3DES:EECDH+aRSA+3DES:RSA+3DES:!MD5;" /etc/nginx/conf.d/vps.conf
-# fi
-
-service nginx restart
-
-# --- SSL Renewal Script and Cron ---
-cat <<EOF > /usr/local/bin/ssl_renew.sh
-#!/bin/bash
-/etc/init.d/nginx stop
-"/root/.acme.sh"/acme.sh --cron --home "/root/.acme.sh" &> /root/renew_ssl.log
-/etc/init.d/nginx start
-/etc/init.d/nginx status
-EOF
-chmod +x /usr/local/bin/ssl_renew.sh
-if ! crontab -l | grep -q 'ssl_renew.sh'; then
-    (crontab -l; echo "15 03 */3 * * /usr/local/bin/ssl_renew.sh") | crontab
-fi
-# --- End SSL/NGINX Integration ---
-# install badvpn
-cd
-wget -O /usr/bin/badvpn-udpgw "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/newudpgw"
+# === BadVPN Setup ===
+wget -qO /usr/bin/badvpn-udpgw https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/newudpgw
 chmod +x /usr/bin/badvpn-udpgw
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7400 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7500 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7600 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7700 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7800 --max-clients 500' /etc/rc.local
-sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7900 --max-clients 500' /etc/rc.local
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7400 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7500 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7600 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7700 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7800 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7900 --max-clients 500
+for port in {7100..7900..100}; do
+    echo "screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:$port --max-clients 500" >> /etc/rc.local
+    screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:$port --max-clients 500
+done
 
-# setting port ssh
-cd
-sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 500' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 40000' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 51443' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 58080' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 666' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 200' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 22' /etc/ssh/sshd_config
-/etc/init.d/ssh restart
-
-echo "=== Install Dropbear ==="
-# install dropbear
-apt -y install dropbear
-sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
-sed -i 's/DROPBEAR_PORT=22/DROPBEAR_PORT=143/g' /etc/default/dropbear
-sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-p 50000 -p 109 -p 110 -p 69"/g' /etc/default/dropbear
-echo "/bin/false" >> /etc/shells
-echo "/usr/sbin/nologin" >> /etc/shells
-/etc/init.d/ssh restart
-/etc/init.d/dropbear restart
-
-cd
-# install stunnel
-apt install stunnel4 -y
-cat > /etc/stunnel/stunnel.conf <<-END
+# === Stunnel Setup ===
+cat > /etc/stunnel/stunnel.conf <<EOF
 cert = /etc/stunnel/stunnel.pem
 client = no
 socket = a:SO_REUSEADDR=1
@@ -297,231 +134,75 @@ connect = 700
 [openvpn]
 accept = 442
 connect = 127.0.0.1:1194
+EOF
 
-END
+openssl req -x509 -nodes -days 1095 -newkey rsa:2048 \
+  -keyout /etc/stunnel/key.pem -out /etc/stunnel/cert.pem \
+  -subj "/C=ID/ST=Indonesia/L=Jakarta/O=none/OU=none/CN=none/emailAddress=none"
 
-# make a certificate
-openssl genrsa -out key.pem 2048
-openssl req -new -x509 -key key.pem -out cert.pem -days 1095 \
--subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
-cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
+cat /etc/stunnel/{key.pem,cert.pem} > /etc/stunnel/stunnel.pem
+sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/stunnel4
+systemctl enable stunnel4
+systemctl restart stunnel4
 
-# konfigurasi stunnel4
-sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
-/lib/systemd/systemd-sysv-install enable stunnel4
-systemctl start stunnel4
-/etc/init.d/stunnel4 restart
-
-
-# install fail2ban
-apt -y install fail2ban
-
-# Instal DDOS Flate
-if [ -d '/usr/local/ddos' ]; then
-        echo; echo; echo "Please un-install the previous version first"
-        exit 0
-else
-        mkdir /usr/local/ddos
-fi
-clear
-echo; echo 'Installing DOS-Deflate 0.6'; echo
-echo; echo -n 'Downloading source files...'
-wget -q -O /usr/local/ddos/ddos.conf http://www.inetbase.com/scripts/ddos/ddos.conf
-echo -n '.'
-wget -q -O /usr/local/ddos/LICENSE http://www.inetbase.com/scripts/ddos/LICENSE
-echo -n '.'
-wget -q -O /usr/local/ddos/ignore.ip.list http://www.inetbase.com/scripts/ddos/ignore.ip.list
-echo -n '.'
-wget -q -O /usr/local/ddos/ddos.sh http://www.inetbase.com/scripts/ddos/ddos.sh
+# === DDoS Protection ===
+mkdir -p /usr/local/ddos
+urls=(
+  "ddos.conf"
+  "LICENSE"
+  "ignore.ip.list"
+  "ddos.sh"
+)
+for file in "${urls[@]}"; do
+  wget -q -O /usr/local/ddos/$file http://www.inetbase.com/scripts/ddos/$file
+done
 chmod 0755 /usr/local/ddos/ddos.sh
-cp -s /usr/local/ddos/ddos.sh /usr/local/sbin/ddos
-echo '...done'
-echo; echo -n 'Creating cron to run script every minute.....(Default setting)'
+ln -s /usr/local/ddos/ddos.sh /usr/local/sbin/ddos
 /usr/local/ddos/ddos.sh --cron > /dev/null 2>&1
-echo '.....done'
-echo; echo 'Installation has completed.'
-echo 'Config file is at /usr/local/ddos/ddos.conf'
-echo 'Please send in your comments and/or suggestions to zaf@vsnl.com'
 
-# // banner /etc/issue.net
-wget -O /etc/issue.net "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/banner/banner.conf"
-echo "Banner /etc/issue.net" >> /etc/ssh/sshd_config
-sed -i 's@DROPBEAR_BANNER=""@DROPBEAR_BANNER="/etc/issue.net"@g' /etc/default/dropbear
-
-# blokir torrent
-iptables -A FORWARD -m string --string "get_peers" --algo bm -j DROP
-iptables -A FORWARD -m string --string "announce_peer" --algo bm -j DROP
-iptables -A FORWARD -m string --string "find_node" --algo bm -j DROP
-iptables -A FORWARD -m string --algo bm --string "BitTorrent" -j DROP
-iptables -A FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP
-iptables -A FORWARD -m string --algo bm --string "peer_id=" -j DROP
-iptables -A FORWARD -m string --algo bm --string ".torrent" -j DROP
-iptables -A FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP
-iptables -A FORWARD -m string --algo bm --string "torrent" -j DROP
-iptables -A FORWARD -m string --algo bm --string "announce" -j DROP
-iptables -A FORWARD -m string --algo bm --string "info_hash" -j DROP
+# === Firewall Torrent Blocking ===
+iptables_rules=(
+  "get_peers" "announce_peer" "find_node" "BitTorrent"
+  "BitTorrent protocol" "peer_id=" ".torrent"
+  "announce.php?passkey=" "torrent" "announce" "info_hash"
+)
+for s in "${iptables_rules[@]}"; do
+  iptables -A FORWARD -m string --string "$s" --algo bm -j DROP
+done
 iptables-save > /etc/iptables.up.rules
-iptables-restore -t < /etc/iptables.up.rules
-netfilter-persistent save
-netfilter-persistent reload
+netfilter-persistent save && netfilter-persistent reload
 
-# download script
+# === Script Menu Installer ===
 cd /usr/bin
-# menu
-wget -O menu "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/menu.sh"
-wget -O m-vmess "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-vmess.sh"
-wget -O m-vless "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-vless.sh"
-wget -O running "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/running.sh"
-wget -O clearcache "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/clearcache.sh"
-wget -O m-ssws "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-ssws.sh"
-wget -O m-trojan "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-trojan.sh"
+scripts=(
+  menu running clearcache m-sshovpn usernew trial
+  renew hapus cek member delete autokill ceklim
+  tendang sshws user-lock user-unlock m-system
+  m-domain add-host certv2ray speedtest m-tcp
+  auto-reboot restart bw xp m-dns
+)
+for s in "${scripts[@]}"; do
+  wget -qO "$s" "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/$s.sh"
+  chmod +x "$s"
+done
 
-# menu ssh ovpn
-wget -O m-sshovpn "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-sshovpn.sh"
-wget -O usernew "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/usernew.sh"
-wget -O trial "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/trial.sh"
-wget -O renew "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/renew.sh"
-wget -O hapus "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/hapus.sh"
-wget -O cek "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/cek.sh"
-wget -O member "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/member.sh"
-wget -O delete "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/delete.sh"
-wget -O autokill "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/autokill.sh"
-wget -O ceklim "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/ceklim.sh"
-wget -O tendang "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/tendang.sh"
-wget -O sshws "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/sshws.sh"
-wget -O user-lock "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/user-lock.sh"
-wget -O user-unlock "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/user-unlock.sh"
-
-# menu system
-wget -O m-system "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-system.sh"
-wget -O m-domain "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-domain.sh"
-wget -O add-host "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/add-host.sh"
-wget -O certv2ray "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/certv2ray.sh"
-wget -O speedtest "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/speedtest_cli.py"
-wget -O auto-reboot "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/auto-reboot.sh"
-wget -O restart "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/restart.sh"
-wget -O bw "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/bw.sh"
-wget -O m-tcp "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/tcp.sh"
-wget -O xp "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/xp.sh"
-wget -O sshws "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/sshws.sh"
-wget -O m-dns "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-dns.sh"
-
-chmod +x menu
-chmod +x m-vmess
-chmod +x m-vless
-chmod +x running
-chmod +x clearcache
-chmod +x m-ssws
-chmod +x m-trojan
-
-chmod +x m-sshovpn
-chmod +x usernew
-chmod +x trial
-chmod +x renew
-chmod +x hapus
-chmod +x cek
-chmod +x member
-chmod +x delete
-chmod +x autokill
-chmod +x ceklim
-chmod +x tendang
-chmod +x sshws
-chmod +x user-lock
-chmod +x user-unlock
-
-chmod +x m-system
-chmod +x m-domain
-chmod +x add-host
-chmod +x certv2ray
-chmod +x speedtest
-chmod +x auto-reboot
-chmod +x restart
-chmod +x bw
-chmod +x m-tcp
-chmod +x xp
-chmod +x sshws
-chmod +x m-dns
-cd
-
-
-cat > /etc/cron.d/re_otm <<-END
+# === Cron Jobs ===
+cat > /etc/cron.d/re_otm <<EOF
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 0 2 * * * root /sbin/reboot
-END
+EOF
 
-cat > /etc/cron.d/xp_otm <<-END
+cat > /etc/cron.d/xp_otm <<EOF
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 0 0 * * * root /usr/bin/xp
-END
+EOF
 
-cat > /home/re_otm <<-END
-7
-END
+echo "7" > /home/re_otm
+service cron restart && service cron reload
 
-service cron restart >/dev/null 2>&1
-service cron reload >/dev/null 2>&1
-
-# remove unnecessary files
-sleep 0.5
-echo -e "[ ${green}INFO$NC ] Clearing trash"
-apt autoclean -y >/dev/null 2>&1
-
-if dpkg -s unscd >/dev/null 2>&1; then
-apt -y remove --purge unscd >/dev/null 2>&1
-fi
-
-apt-get -y --purge remove samba* >/dev/null 2>&1
-apt-get -y --purge remove apache2* >/dev/null 2>&1
-apt-get -y --purge remove bind9* >/dev/null 2>&1
-apt-get -y remove sendmail* >/dev/null 2>&1
-apt autoremove -y >/dev/null 2>&1
-# finishing
-cd
+# === Final Cleanup ===
 chown -R www-data:www-data /home/vps/public_html
-sleep 0.5
-echo -e "$yell[SERVICE]$NC Restart All service SSH & OVPN"
-/etc/init.d/nginx restart >/dev/null 2>&1
-sleep 0.5
-echo -e "[ ${green}ok${NC} ] Restarting nginx"
-/etc/init.d/openvpn restart >/dev/null 2>&1
-sleep 0.5
-echo -e "[ ${green}ok${NC} ] Restarting cron "
-/etc/init.d/ssh restart >/dev/null 2>&1
-sleep 0.5
-echo -e "[ ${green}ok${NC} ] Restarting ssh "
-/etc/init.d/dropbear restart >/dev/null 2>&1
-sleep 0.5
-echo -e "[ ${green}ok${NC} ] Restarting dropbear "
-/etc/init.d/fail2ban restart >/dev/null 2>&1
-sleep 0.5
-echo -e "[ ${green}ok${NC} ] Restarting fail2ban "
-/etc/init.d/stunnel4 restart >/dev/null 2>&1
-sleep 0.5
-echo -e "[ ${green}ok${NC} ] Restarting stunnel4 "
-/etc/init.d/vnstat restart >/dev/null 2>&1
-sleep 0.5
-echo -e "[ ${green}ok${NC} ] Restarting vnstat "
-/etc/init.d/squid restart >/dev/null 2>&1
-
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7400 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7500 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7600 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7700 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7800 --max-clients 500
-screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7900 --max-clients 500
-history -c
-echo "unset HISTFILE" >> /etc/profile
-
-
-rm -f /root/key.pem
-rm -f /root/cert.pem
-rm -f /root/ssh-vpn.sh
-rm -f /root/bbr.sh
-
-# finihsing
-clear
+rm -f /root/key.pem /root/cert.pem /root/ssh-vpn.sh /root/bbr.sh
+history -c && echo "unset HISTFILE" >> /etc/profile

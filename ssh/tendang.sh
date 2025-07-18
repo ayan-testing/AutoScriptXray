@@ -1,97 +1,59 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
+
+MYIP=$(wget -qO- ipv4.icanhazip.com)
+MAX=${1:-1}  # Default max sessions per user is 1, or custom if passed as argument
 clear
-MAX=1
-if [ -e "/var/log/auth.log" ]; then
-        OS=1;
-        LOG="/var/log/auth.log";
-fi
-if [ -e "/var/log/secure" ]; then
-        OS=2;
-        LOG="/var/log/secure";
+echo "Checking VPS"
+
+# Detect OS log path
+if [[ -f /var/log/auth.log ]]; then
+    LOG="/var/log/auth.log"
+    SSH_SERVICE="ssh"
+elif [[ -f /var/log/secure ]]; then
+    LOG="/var/log/secure"
+    SSH_SERVICE="sshd"
+else
+    echo "Log file not found."
+    exit 1
 fi
 
-if [ $OS -eq 1 ]; then
-	service ssh restart > /dev/null 2>&1;
-fi
-if [ $OS -eq 2 ]; then
-	service sshd restart > /dev/null 2>&1;
-fi
-	service dropbear restart > /dev/null 2>&1;
-				
-if [[ ${1+x} ]]; then
-        MAX=$1;
-fi
+# Restart services
+systemctl restart $SSH_SERVICE >/dev/null 2>&1
+systemctl restart dropbear >/dev/null 2>&1
 
-        cat /etc/passwd | grep "/home/" | cut -d":" -f1 > /root/user.txt
-        username1=( `cat "/root/user.txt" `);
-        i="0";
-        for user in "${username1[@]}"
-			do
-                username[$i]=`echo $user | sed 's/'\''//g'`;
-                jumlah[$i]=0;
-                i=$i+1;
-			done
-        cat $LOG | grep -i dropbear | grep -i "Password auth succeeded" > /tmp/log-db.txt
-        proc=( `ps aux | grep -i dropbear | awk '{print $2}'`);
-        for PID in "${proc[@]}"
-			do
-                cat /tmp/log-db.txt | grep "dropbear\[$PID\]" > /tmp/log-db-pid.txt
-                NUM=`cat /tmp/log-db-pid.txt | wc -l`;
-                USER=`cat /tmp/log-db-pid.txt | awk '{print $10}' | sed 's/'\''//g'`;
-                IP=`cat /tmp/log-db-pid.txt | awk '{print $12}'`;
-                if [ $NUM -eq 1 ]; then
-                        i=0;
-                        for user1 in "${username[@]}"
-							do
-                                if [ "$USER" == "$user1" ]; then
-                                        jumlah[$i]=`expr ${jumlah[$i]} + 1`;
-                                        pid[$i]="${pid[$i]} $PID"
-                                fi
-                                i=$i+1;
-							done
-                fi
-			done
-        cat $LOG | grep -i sshd | grep -i "Accepted password for" > /tmp/log-db.txt
-        data=( `ps aux | grep "\[priv\]" | sort -k 72 | awk '{print $2}'`);
-        for PID in "${data[@]}"
-			do
-                cat /tmp/log-db.txt | grep "sshd\[$PID\]" > /tmp/log-db-pid.txt;
-                NUM=`cat /tmp/log-db-pid.txt | wc -l`;
-                USER=`cat /tmp/log-db-pid.txt | awk '{print $9}'`;
-                IP=`cat /tmp/log-db-pid.txt | awk '{print $11}'`;
-                if [ $NUM -eq 1 ]; then
-                        i=0;
-                        for user1 in "${username[@]}"
-							do
-                                if [ "$USER" == "$user1" ]; then
-                                        jumlah[$i]=`expr ${jumlah[$i]} + 1`;
-                                        pid[$i]="${pid[$i]} $PID"
-                                fi
-                                i=$i+1;
-							done
-                fi
+# Get list of users with /home directory
+users=($(awk -F: '/\/home\// {print $1}' /etc/passwd))
+declare -A user_count
+declare -A user_pids
+
+# Analyze Dropbear logins
+grep -i "dropbear.*Password auth succeeded" $LOG > /tmp/logins.txt
+for pid in $(pgrep dropbear); do
+    grep "dropbear\[$pid\]" /tmp/logins.txt | while read -r line; do
+        user=$(echo "$line" | awk '{print $10}')
+        user_count["$user"]=$(( ${user_count["$user"]} + 1 ))
+        user_pids["$user"]+="$pid "
+    done
+done
+
+# Analyze OpenSSH logins
+grep "sshd.*Accepted password for" $LOG >> /tmp/logins.txt
+for pid in $(ps aux | grep '\[priv\]' | awk '{print $2}'); do
+    grep "sshd\[$pid\]" /tmp/logins.txt | while read -r line; do
+        user=$(echo "$line" | awk '{print $9}')
+        user_count["$user"]=$(( ${user_count["$user"]} + 1 ))
+        user_pids["$user"]+="$pid "
+    done
+done
+
+# Kill users exceeding the session limit
+for user in "${users[@]}"; do
+    count=${user_count["$user"]:-0}
+    if (( count > MAX )); then
+        echo "$(date '+%Y-%m-%d %X') - $user - $count"
+        echo "$(date '+%Y-%m-%d %X') - $user - $count" >> /root/log-limit.txt
+        for pid in ${user_pids["$user"]}; do
+            kill "$pid" 2>/dev/null
         done
-        j="0";
-        for i in ${!username[*]}
-			do
-                if [ ${jumlah[$i]} -gt $MAX ]; then
-                        date=`date +"%Y-%m-%d %X"`;
-                        echo "$date - ${username[$i]} - ${jumlah[$i]}";
-                        echo "$date - ${username[$i]} - ${jumlah[$i]}" >> /root/log-limit.txt;
-                        kill ${pid[$i]};
-                        pid[$i]="";
-                        j=`expr $j + 1`;
-                fi
-			done
-        if [ $j -gt 0 ]; then
-                if [ $OS -eq 1 ]; then
-                        service ssh restart > /dev/null 2>&1;
-                fi
-                if [ $OS -eq 2 ]; then
-                        service sshd restart > /dev/null 2>&1;
-                fi
-                service dropbear restart > /dev/null 2>&1;
-                j=0;
-		fi
+    fi
+done

@@ -1,0 +1,10 @@
+{
+  "openssh": "22",
+  "ssh_ws": "80",
+  "ssh_ssl_ws": "443",
+  "stunnel": "443",
+  "squid": "3128",
+  "ohp_ssh": "8087",
+  "ohp_db": "8085",
+  "ohp_ovpn": "8086"
+}

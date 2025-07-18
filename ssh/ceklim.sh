@@ -1,24 +1,21 @@
 #!/bin/bash
-MYIP=$(wget -qO- ipv4.icanhazip.com);
-echo "Checking VPS"
+
 clear
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "\E[0;41;36m         CEK USER MULTI SSH        \E[0m"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo "Checking VPS IP: $MYIP"
+echo "---------------------------------------"
+echo "        SSH Multi-Login Checker        "
+echo "---------------------------------------"
+
 if [ -e "/root/log-limit.txt" ]; then
-echo "User Who Violate The Maximum Limit";
-echo "Time - Username - Number of Multilogin"
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-cat /root/log-limit.txt
+    echo "Users exceeding maximum login limit:"
+    echo "Time - Username - Number of Logins"
+    echo "---------------------------------------"
+    cat /root/log-limit.txt
 else
-echo " No user has committed a violation"
-echo " "
-echo " or"
-echo " "
-echo " The user-limit script not been executed."
+    echo "No user has exceeded the login limit."
+    echo "Or the user-limit script has not been run yet."
 fi
-echo " ";
-echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo ""
-read -n 1 -s -r -p "Press any key to back on menu"
+
+echo "---------------------------------------"
+read -n 1 -s -r -p "Press any key to return to menu"
 m-sshovpn
