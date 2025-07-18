@@ -38,6 +38,8 @@ sysctl -w net.ipv6.conf.default.disable_ipv6=1
 # Install required packages
 apt install -y git curl python >/dev/null 2>&1
 
+mkdir -p /etc/AutoScriptXray
+
 # Ask for domain
 clear
 echo "---------------------------"
