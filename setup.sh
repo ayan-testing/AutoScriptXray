@@ -157,7 +157,7 @@ mesg n || true
 clear
 menu
 END
-chmod 644 /root/.profile
+chmod 644 /root/.profile 
 
 if [ -f "/root/log-install.txt" ]; then
     rm /root/log-install.txt > /dev/null 2>&1
@@ -167,18 +167,6 @@ if [ -f "/etc/afak.conf" ]; then
 fi
 if [ ! -f "/etc/log-create-ssh.log" ]; then
     echo "Log SSH Account " > /etc/log-create-ssh.log
-fi
-if [ ! -f "/etc/log-create-vmess.log" ]; then
-    echo "Log Vmess Account " > /etc/log-create-vmess.log
-fi
-if [ ! -f "/etc/log-create-vless.log" ]; then
-    echo "Log Vless Account " > /etc/log-create-vless.log
-fi
-if [ ! -f "/etc/log-create-trojan.log" ]; then
-    echo "Log Trojan Account " > /etc/log-create-trojan.log
-fi
-if [ ! -f "/etc/log-create-shadowsocks.log" ]; then
-    echo "Log Shadowsocks Account " > /etc/log-create-shadowsocks.log
 fi
 history -c
 serverV=$( curl -sS https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/versi  )
@@ -202,8 +190,6 @@ echo "   - Stunnel4                 : 222, 777" | tee -a log-install.txt
 echo "   - Dropbear                 : 109, 143" | tee -a log-install.txt
 echo "   - Badvpn                   : 7100-7900" | tee -a log-install.txt
 echo "   - Nginx                    : 81" | tee -a log-install.txt
-echo ""
-echo -e ""
 echo ""
 rm /root/setup.sh >/dev/null 2>&1
 rm /root/insshws.sh >/dev/null 2>&1

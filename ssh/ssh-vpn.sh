@@ -206,10 +206,10 @@ chmod +x /root/.acme.sh/acme.sh
 /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
 ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/nginx/ssl.crt --keypath /etc/nginx/ssl.key --ecc
 
-# Configure nginx to use SSL cert (add to vps.conf or your server block as needed)
-if ! grep -q 'ssl_certificate /etc/nginx/ssl.crt;' /etc/nginx/conf.d/vps.conf; then
-    sed -i "/server_name/a \\tssl_certificate /etc/nginx/ssl.crt;\n\tssl_certificate_key /etc/nginx/ssl.key;\n\tssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;\n\tssl_ciphers EECDH+CHACHA20:EECDH+ECDSA+AES128:EECDH+aRSA+AES128:RSA+AES128:EECDH+ECDSA+AES256:EECDH+aRSA+AES256:RSA+AES256:EECDH+ECDSA+3DES:EECDH+aRSA+3DES:RSA+3DES:!MD5;" /etc/nginx/conf.d/vps.conf
-fi
+# # Configure nginx to use SSL cert (add to vps.conf or your server block as needed)
+# if ! grep -q 'ssl_certificate /etc/nginx/ssl.crt;' /etc/nginx/conf.d/vps.conf; then
+#     sed -i "/server_name/a \\tssl_certificate /etc/nginx/ssl.crt;\n\ssl_certificate_key /etc/nginx/ssl.key;\n\tssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;\n\tssl_ciphers EECDH+CHACHA20:EECDH+ECDSA+AES128:EECDH+aRSA+AES128:RSA+AES128:EECDH+ECDSA+AES256:EECDH+aRSA+AES256:RSA+AES256:EECDH+ECDSA+3DES:EECDH+aRSA+3DES:RSA+3DES:!MD5;" /etc/nginx/conf.d/vps.conf
+# fi
 
 service nginx restart
 
@@ -254,7 +254,6 @@ cd
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
 sed -i '/Port 22/a Port 500' /etc/ssh/sshd_config
 sed -i '/Port 22/a Port 40000' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port 81' /etc/ssh/sshd_config
 sed -i '/Port 22/a Port 51443' /etc/ssh/sshd_config
 sed -i '/Port 22/a Port 58080' /etc/ssh/sshd_config
 sed -i '/Port 22/a Port 666' /etc/ssh/sshd_config
