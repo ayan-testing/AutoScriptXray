@@ -156,28 +156,76 @@ install_ssl(){
     fi
 }
 
-# install webserver
-apt -y install nginx
-cd
-rm /etc/nginx/sites-enabled/default
-rm /etc/nginx/sites-available/default
-wget -O /etc/nginx/nginx.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/nginx.conf"
-rm /etc/nginx/conf.d/vps.conf
-wget -O /etc/nginx/conf.d/vps.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/vps.conf"
-/etc/init.d/nginx restart
+# Set domain variable (ensure /etc/xray/domain or /root/domain exists or prompt user to set domain)
+if [ -f /etc/xray/domain ]; then
+    domain=$(cat /etc/xray/domain)
+elif [ -f /root/domain ]; then
+    domain=$(cat /root/domain)
+else
+    echo "Enter your domain (for SSL cert):"
+    read domain
+    echo "$domain" > /root/domain
+fi
 
-mkdir /etc/systemd/system/nginx.service.d
-printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
-rm /etc/nginx/conf.d/default.conf
-systemctl daemon-reload
-service nginx restart
-cd
-mkdir /home/vps
-mkdir /home/vps/public_html
+# Install nginx and dependencies
+apt -y install nginx socat curl wget xz-utils apt-transport-https gnupg gnupg2 gnupg1 lsb-release zip
+
+# Remove default nginx configs
+rm -f /etc/nginx/sites-enabled/default
+rm -f /etc/nginx/sites-available/default
+rm -f /etc/nginx/conf.d/default.conf
+
+# Download custom nginx config (adjust as needed)
+wget -O /etc/nginx/nginx.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/nginx.conf"
+rm -f /etc/nginx/conf.d/vps.conf
+wget -O /etc/nginx/conf.d/vps.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/vps.conf"
+
+# Add xray.conf for / proxy to 127.0.0.1:700
+wget -O /etc/nginx/conf.d/xray.conf "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/xray.conf"
+
+# Create web root
+mkdir -p /home/vps/public_html
 wget -O /home/vps/public_html/index.html "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/index"
 wget -O /home/vps/public_html/.htaccess "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/.htaccess"
-mkdir /home/vps/public_html/ss-ws
-mkdir /home/vps/public_html/clash-ws
+mkdir -p /home/vps/public_html/ss-ws
+mkdir -p /home/vps/public_html/clash-ws
+
+# Prepare nginx systemd override
+mkdir -p /etc/systemd/system/nginx.service.d
+printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
+systemctl daemon-reload
+service nginx restart
+
+# --- SSL Certificate with acme.sh ---
+systemctl stop nginx
+mkdir -p /root/.acme.sh
+curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+chmod +x /root/.acme.sh/acme.sh
+/root/.acme.sh/acme.sh --upgrade --auto-upgrade
+/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+/root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
+~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/nginx/ssl.crt --keypath /etc/nginx/ssl.key --ecc
+
+# Configure nginx to use SSL cert (add to vps.conf or your server block as needed)
+if ! grep -q 'ssl_certificate /etc/nginx/ssl.crt;' /etc/nginx/conf.d/vps.conf; then
+    sed -i "/server_name/a \\tssl_certificate /etc/nginx/ssl.crt;\n\tssl_certificate_key /etc/nginx/ssl.key;\n\tssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;\n\tssl_ciphers EECDH+CHACHA20:EECDH+ECDSA+AES128:EECDH+aRSA+AES128:RSA+AES128:EECDH+ECDSA+AES256:EECDH+aRSA+AES256:RSA+AES256:EECDH+ECDSA+3DES:EECDH+aRSA+3DES:RSA+3DES:!MD5;" /etc/nginx/conf.d/vps.conf
+fi
+
+service nginx restart
+
+# --- SSL Renewal Script and Cron ---
+cat <<EOF > /usr/local/bin/ssl_renew.sh
+#!/bin/bash
+/etc/init.d/nginx stop
+"/root/.acme.sh"/acme.sh --cron --home "/root/.acme.sh" &> /root/renew_ssl.log
+/etc/init.d/nginx start
+/etc/init.d/nginx status
+EOF
+chmod +x /usr/local/bin/ssl_renew.sh
+if ! crontab -l | grep -q 'ssl_renew.sh'; then
+    (crontab -l; echo "15 03 */3 * * /usr/local/bin/ssl_renew.sh") | crontab
+fi
+# --- End SSL/NGINX Integration ---
 # install badvpn
 cd
 wget -O /usr/bin/badvpn-udpgw "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/newudpgw"
@@ -271,10 +319,10 @@ apt -y install fail2ban
 
 # Instal DDOS Flate
 if [ -d '/usr/local/ddos' ]; then
-	echo; echo; echo "Please un-install the previous version first"
-	exit 0
+        echo; echo; echo "Please un-install the previous version first"
+        exit 0
 else
-	mkdir /usr/local/ddos
+        mkdir /usr/local/ddos
 fi
 clear
 echo; echo 'Installing DOS-Deflate 0.6'; echo
@@ -349,7 +397,7 @@ wget -O user-unlock "https://raw.githubusercontent.com/ayan-testing/AutoScriptXr
 wget -O m-system "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-system.sh"
 wget -O m-domain "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/m-domain.sh"
 wget -O add-host "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/add-host.sh"
-wget -O certv2ray "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/xray/certv2ray.sh"
+wget -O certv2ray "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/certv2ray.sh"
 wget -O speedtest "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/speedtest_cli.py"
 wget -O auto-reboot "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/auto-reboot.sh"
 wget -O restart "https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/menu/restart.sh"
