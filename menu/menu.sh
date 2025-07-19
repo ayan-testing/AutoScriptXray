@@ -1,8 +1,6 @@
 #!/bin/bash
 
-MYIP=$(curl -sS ifconfig.me)
 clear
-echo "Checking VPS..."
 
 # VPS Information
 domain=$(cat /etc/AutoScriptXray/domain)
