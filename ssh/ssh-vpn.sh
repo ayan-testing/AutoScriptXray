@@ -168,7 +168,7 @@ EOF
 
 openssl req -x509 -nodes -days 1095 -newkey rsa:2048 \
   -keyout /etc/stunnel/key.pem -out /etc/stunnel/cert.pem \
-  -subj "/C=ID/ST=Indonesia/L=Jakarta/O=none/OU=none/CN=none/emailAddress=none" > /dev/null 2>&1 || log_error "Failed to generate stunnel certificate."
+  -subj "/C=IN/ST=Maharashtra/L=Mumbai/O=none/OU=none/CN=none/emailAddress=none" > /dev/null 2>&1 || log_error "Failed to generate stunnel certificate."
 
 cat /etc/stunnel/{key.pem,cert.pem} > /etc/stunnel/stunnel.pem
 sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/stunnel4
