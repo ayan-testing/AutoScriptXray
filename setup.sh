@@ -7,9 +7,9 @@ YELLOW="\033[1;33m"
 NC="\033[0m" # No Color
 
 # Logging functions
-log_info() {echo -e "${GREEN}[ Info ]${NC} $1"}
-log_error() {echo -e "${RED}[ Error ]${NC} $1" >&2}
-log_warning() {echo -e "${YELLOW}[ Warning ]${NC} $1"}
+log_info()    { echo -e "${GREEN}[ Info ]${NC} $1"; }
+log_error()   { echo -e "${RED}[ Error ]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[ Warning ]${NC} $1"; }
 
 # Ensure script is run as root
 if [ "$(id -u)" -ne 0 ]; then
