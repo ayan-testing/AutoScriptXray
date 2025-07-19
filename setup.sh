@@ -65,7 +65,7 @@ else
 fi
 
 # Install SSH WebSocket
-echo "Installing SSH WebSocket..."
+log_info "Installing SSH WebSocket..."
 wget -q https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/ssh-vpn.sh && chmod +x ssh-vpn.sh && ./ssh-vpn.sh
 wget -q https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/sshws/insshws.sh && chmod +x insshws.sh && ./insshws.sh
 

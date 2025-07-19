@@ -1,5 +1,4 @@
 #!/bin/bash
-clear
 cd
 
 # Install Script Websocket-SSH Python
