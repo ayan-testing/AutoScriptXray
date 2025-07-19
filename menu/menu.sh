@@ -18,7 +18,6 @@ tlsStatus=$remainingDays
 # System Info
 uptime=$(uptime -p | cut -d " " -f 2-10)
 IPVPS=$(curl -s ifconfig.me)
-LOC=$(curl -s ifconfig.co/country)
 DATE2=$(date -R | cut -d " " -f -5)
 
 # RAM Info
@@ -36,7 +35,6 @@ echo "-------------------------------------------------"
 echo " OS            : $(hostnamectl | grep 'Operating System' | cut -d ' ' -f5-)"
 echo " Uptime        : $uptime"
 echo " Public IP     : $IPVPS"
-echo " Country       : $LOC"
 echo " Domain        : $domain"
 echo " Date & Time   : $DATE2"
 echo "-------------------------------------------------"
