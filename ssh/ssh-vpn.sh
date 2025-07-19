@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # === Logging Functions ===
@@ -10,7 +9,6 @@ log_info()    { echo -e "${GREEN}[ Info ]${NC} $1"; }
 log_error()   { echo -e "${RED}[ Error ]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[ Warning ]${NC} $1"; }
 
-
 # === Basic Setup ===
 export DEBIAN_FRONTEND=noninteractive
 if [[ ! -f /etc/AutoScriptXray/domain ]]; then
@@ -19,13 +17,11 @@ if [[ ! -f /etc/AutoScriptXray/domain ]]; then
 fi
 domain=$(cat /etc/AutoScriptXray/domain)
 
-
 log_info "Updating system and removing unwanted packages..."
 apt update -y > /dev/null 2>&1 && apt dist-upgrade -y > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then log_error "System update failed."; exit 1; fi
 apt-get purge -y ufw firewalld exim4 samba* apache2* bind9* sendmail* unscd > /dev/null 2>&1 || log_warning "Some packages could not be purged (may not be installed)."
 apt autoremove -y > /dev/null 2>&1 && apt autoclean -y > /dev/null 2>&1
-
 
 log_info "Installing essential packages..."
 apt install -y \
@@ -37,15 +33,12 @@ apt install -y \
   shc wget stunnel4 nginx socat xz-utils > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then log_error "Failed to install one or more essential packages."; exit 1; fi
 
-
 sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
-
 
 log_info "Disabling IPv6..."
 echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.d/99-disable-ipv6.conf
 echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.d/99-disable-ipv6.conf
 sysctl --system > /dev/null 2>&1 || log_warning "Failed to reload sysctl settings."
-
 
 log_info "Configuring SSH..."
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
@@ -53,7 +46,6 @@ for port in 22 200; do
     sed -i "/Port 22/a Port $port" /etc/ssh/sshd_config
 done
 /etc/init.d/ssh restart > /dev/null 2>&1 || log_warning "Failed to restart SSH."
-
 
 log_info "Configuring Dropbear..."
 apt install -y dropbear > /dev/null 2>&1 || log_error "Failed to install Dropbear."
@@ -97,10 +89,8 @@ cat > /etc/systemd/system/nginx.service.d/override.conf <<EOF
 ExecStartPost=/bin/sleep 0.1
 EOF
 
-
 systemctl daemon-reload > /dev/null 2>&1
 systemctl restart nginx > /dev/null 2>&1 || log_error "Failed to restart Nginx."
-
 
 log_info "Setting up SSL certificate with acme.sh..."
 mkdir -p /root/.acme.sh
@@ -113,11 +103,9 @@ chmod +x /root/.acme.sh/acme.sh
   --fullchainpath /etc/AutoScriptXray/cert.crt \
   --keypath /etc/AutoScriptXray/cert.key --ecc > /dev/null 2>&1 || log_error "acme.sh certificate install failed."
 
-
 log_info "Setting up BadVPN..."
 wget -qO /usr/bin/badvpn-udpgw https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/newudpgw || log_error "Failed to download BadVPN."
 chmod +x /usr/bin/badvpn-udpgw
-
 
 # Create systemd service for BadVPN (multi-instance)
 cat > /etc/systemd/system/badvpn-udpgw@.service <<EOF
@@ -134,12 +122,10 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-
 log_info "Enabling and starting BadVPN services..."
 for port in 7100 7200 7300 7400 7500 7600 7700 7800 7900; do
     systemctl enable --now badvpn-udpgw@${port}.service > /dev/null 2>&1 || log_warning "Failed to start badvpn-udpgw@${port}.service."
 done
-
 
 log_info "Configuring Stunnel..."
 cat > /etc/stunnel/stunnel.conf <<EOF
@@ -175,7 +161,6 @@ sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/stunnel4
 systemctl enable stunnel4 > /dev/null 2>&1
 systemctl restart stunnel4 > /dev/null 2>&1 || log_warning "Failed to restart stunnel4."
 
-
 log_info "Configuring Fail2Ban..."
 cat > /etc/fail2ban/jail.local <<EOF
 [sshd]
@@ -196,7 +181,6 @@ EOF
 systemctl enable fail2ban > /dev/null 2>&1
 systemctl restart fail2ban > /dev/null 2>&1 || log_warning "Failed to restart fail2ban."
 
-
 log_info "Applying firewall rules to block torrent traffic..."
 iptables_rules=(
   "get_peers" "announce_peer" "find_node" "BitTorrent"
@@ -208,7 +192,6 @@ for s in "${iptables_rules[@]}"; do
 done
 iptables-save > /etc/iptables.up.rules
 netfilter-persistent save > /dev/null 2>&1 && netfilter-persistent reload > /dev/null 2>&1
-
 
 log_info "Installing menu and SSH scripts..."
 cd /usr/bin
@@ -233,7 +216,6 @@ for s in "${ssh_scripts[@]}"; do
   fi
 done
 
-
 log_info "Setting up cron jobs..."
 cat > /etc/cron.d/re_otm <<EOF
 SHELL=/bin/sh
@@ -249,7 +231,6 @@ EOF
 
 echo "7" > /home/re_otm
 service cron restart > /dev/null 2>&1 && service cron reload > /dev/null 2>&1
-
 
 log_info "Final cleanup..."
 chown -R www-data:www-data /home/vps/public_html

@@ -45,9 +45,6 @@ if ! dpkg-query -W --showformat='${Status}\n' "$required_pkg" | grep -q "install
     exit 0
 fi
 
-# Install required packages
-apt install -y git curl python >/dev/null 2>&1
-
 mkdir -p /etc/AutoScriptXray
 
 # Ask for domain
@@ -58,7 +55,7 @@ echo "---------------------------"
 read -rp "Enter Your Domain: " user_domain
 
 if echo "$user_domain" > /etc/AutoScriptXray/domain; then
-    log_info "Domain saved to /etc/AutoScriptXray/domain."
+    log_info "Domain saved."
 else
     log_error "Failed to save domain."
     exit 1
@@ -68,18 +65,7 @@ fi
 log_info "Installing SSH WebSocket..."
 wget -q https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/ssh/ssh-vpn.sh && chmod +x ssh-vpn.sh && ./ssh-vpn.sh
 
-# Log installation info
-echo "Service & Port:"
-echo "OpenSSH                  : 22"
-echo "SSH WebSocket            : 80"
-echo "SSH SSL WebSocket        : 443"
-echo "Stunnel4                 : 222, 777"
-echo "Dropbear                 : 109, 143"
-echo "Badvpn                   : 7100-7900"
-echo "Nginx                    : 81"
-
 # Cleanup and reboot
-rm -f /root/setup.sh /root/insshws.sh
-log_info "Cleanup done. Rebooting in 10 seconds..."
-sleep 10
+log_info "Installation complete."
+sleep 5
 reboot
