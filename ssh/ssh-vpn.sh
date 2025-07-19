@@ -33,9 +33,9 @@ apt install -y \
   iftop zip unzip git apt-transport-https build-essential \
   python3 make net-tools nano sed gnupg bc dirmngr \
   lsof libz-dev gcc g++ \
-  zlib1g-dev libssl-dev libssl1.0-dev dos2unix fail2ban \
+  zlib1g-dev libssl-dev dos2unix fail2ban \
   shc wget stunnel4 nginx socat xz-utils > /dev/null 2>&1
-if [[ $? -ne 0 ]]; then log_error "Failed to install essential packages."; exit 1; fi
+if [[ $? -ne 0 ]]; then log_error "Failed to install one or more essential packages."; exit 1; fi
 
 
 sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
@@ -63,6 +63,16 @@ sed -i 's|DROPBEAR_EXTRA_ARGS=.*|DROPBEAR_EXTRA_ARGS="-p 109 -p 69"|' /etc/defau
 echo -e "/bin/false\n/usr/sbin/nologin" >> /etc/shells
 /etc/init.d/dropbear restart > /dev/null 2>&1 || log_warning "Failed to restart Dropbear."
 
+log_info "Setting up WebSocket-SSH Python service..."
+# Download WebSocket-SSH Python script and service file
+wget -O /usr/local/bin/ws-stunnel https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/sshws/ws-stunnel > /dev/null 2>&1 && chmod +x /usr/local/bin/ws-stunnel || log_warning "Failed to install ws-stunnel."
+wget -O /etc/systemd/system/ws-stunnel.service https://raw.githubusercontent.com/ayan-testing/AutoScriptXray/master/sshws/ws-stunnel.service > /dev/null 2>&1 && chmod +x /etc/systemd/system/ws-stunnel.service || log_warning "Failed to install ws-stunnel.service."
+
+# Reload systemd and enable/start/restart service
+systemctl daemon-reload > /dev/null 2>&1
+systemctl enable ws-stunnel.service > /dev/null 2>&1
+systemctl start ws-stunnel.service > /dev/null 2>&1
+systemctl restart ws-stunnel.service > /dev/null 2>&1
 
 log_info "Setting up Nginx..."
 rm -f /etc/nginx/{sites-available/default,sites-enabled/default,conf.d/default.conf}
